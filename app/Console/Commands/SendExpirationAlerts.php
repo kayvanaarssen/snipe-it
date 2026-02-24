@@ -14,11 +14,11 @@ use Illuminate\Support\Facades\Mail;
 class SendExpirationAlerts extends Command
 {
     /**
-     * The console command name.
-     *
+     * The name and signature of the console command.
+ *
      * @var string
      */
-    protected $name = 'snipeit:expiring-alerts';
+    protected $signature = 'snipeit:expiring-alerts {--expired-licenses}';
 
     /**
      * The console command description.
@@ -55,6 +55,8 @@ class SendExpirationAlerts extends Command
             // Expiring Assets
             $assets = Asset::getExpiringWarrantyOrEol($alert_interval);
 
+            $assets->load(['assignedTo', 'supplier']);
+
             if ($assets->count() > 0) {
 
                 Mail::to($recipients)->send(new ExpiringAssetsMail($assets, $alert_interval));
@@ -85,7 +87,7 @@ class SendExpirationAlerts extends Command
             }
 
             // Expiring licenses
-            $licenses = License::query()->ExpiringLicenses($alert_interval)
+            $licenses = License::query()->ExpiringLicenses($alert_interval, $this->option('expired-licenses'))
                 ->with('manufacturer','category')
                 ->orderBy('expiration_date', 'ASC')
                 ->orderBy('termination_date', 'ASC')

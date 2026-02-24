@@ -74,15 +74,15 @@ class AcceptanceController extends Controller
      */
     public function store(Request $request, $id) : RedirectResponse
     {
-        $acceptance = CheckoutAcceptance::find($id);
+
+        if (!$acceptance = CheckoutAcceptance::find($id)) {
+            return redirect()->route('account.accept')->with('error', trans('admin/hardware/message.does_not_exist'));
+        }
+        
         $assigned_user = User::find($acceptance->assigned_to_id);
         $settings = Setting::getSettings();
         $sig_filename='';
 
-
-        if (is_null($acceptance)) {
-            return redirect()->route('account.accept')->with('error', trans('admin/hardware/message.does_not_exist'));
-        }
 
         if (! $acceptance->isPending()) {
             return redirect()->route('account.accept')->with('error', trans('admin/users/message.error.asset_already_accepted'));
@@ -216,7 +216,7 @@ class AcceptanceController extends Controller
             try {
                 $recipient = User::find($acceptance->alert_on_response_id);
 
-                if ($recipient) {
+                if ($recipient?->email) {
                     Log::debug('Attempting to send email acceptance.');
                     Mail::to($recipient)->send(new CheckoutAcceptanceResponseMail(
                         $acceptance,
